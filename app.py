@@ -136,12 +136,16 @@ def generate_insights():
     
     # 2. Air Quality Impact
     if aqi:
-        if aqi == 1 or aqi == 2:
+        if aqi == 1:
             insights.append({"type": "Atmospheric Health", "icon": "fa-wind", "message": "Air quality is favorable. Excellent conditions for opening windows and refreshing indoor air."})
+        elif aqi == 2:
+            insights.append({"type": "Atmospheric Health", "icon": "fa-wind", "message": "Air quality is fair to moderate. Generally acceptable for most individuals."})
         elif aqi == 3:
             insights.append({"type": "Atmospheric Health", "icon": "fa-smog", "message": "Moderate air quality. Sensitive individuals might experience minor respiratory symptoms."})
+        elif aqi == 4:
+            insights.append({"type": "Atmospheric Health", "icon": "fa-mask-ventilator", "message": "Air quality is poor. Keep windows closed and avoid heavy exertion outdoors."})
         else:
-            insights.append({"type": "Atmospheric Health", "icon": "fa-mask-ventilator", "message": "Air quality is degraded. Keep windows closed and avoid heavy exertion outdoors."})
+            insights.append({"type": "Atmospheric Health", "icon": "fa-biohazard", "message": "Air quality is very poor. Serious health risks. Everyone should avoid outdoor activities."})
     
     # 3. Commute & Visibility
     if visibility < 2000 or weather_main in ['fog', 'mist']:

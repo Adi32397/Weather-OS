@@ -233,11 +233,11 @@ function updateUI(aqiData, insightsData) {
         document.getElementById('pm10').textContent = comps.pm10;
         document.getElementById('o3').textContent = comps.o3;
         
-        let status = 'Good', color = '#10b981';
-        if(aqi === 2) { status = 'Fair'; color = '#f59e0b'; }
-        if(aqi === 3) { status = 'Moderate'; color = '#f97316'; }
-        if(aqi === 4) { status = 'Poor'; color = '#ef4444'; }
-        if(aqi === 5) { status = 'Very Poor'; color = '#991b1b'; }
+        let status = 'Good', color = '#10b981'; // 🟢 Green
+        if(aqi === 2) { status = 'Fair/Moderate'; color = '#facc15'; } // 🟡 Yellow
+        if(aqi === 3) { status = 'Moderate'; color = '#fb923c'; } // 🟠 Orange
+        if(aqi === 4) { status = 'Poor'; color = '#ef4444'; } // 🔴 Red
+        if(aqi === 5) { status = 'Very Poor'; color = '#a855f7'; } // 🟣 Purple
         
         const aqiStatusEl = document.getElementById('aqi-status');
         aqiStatusEl.textContent = status;
