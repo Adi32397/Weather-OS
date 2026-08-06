@@ -1,0 +1,186 @@
+:root {
+    /* Primary Colors */
+    --color-primary: #2563EB;
+    --color-secondary: #38BDF8;
+    --color-accent: #7C3AED;
+    
+    /* Backgrounds */
+    --color-bg-dark: #0f172a;
+    --color-bg-midnight: #020617;
+    
+    /* Glassmorphism Variables */
+    --glass-opacity: 0.03;
+    --glass-bg: rgba(255, 255, 255, var(--glass-opacity));
+    --glass-border: rgba(255, 255, 255, 0.08);
+    --glass-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+    --glass-blur: blur(8px);
+    --border-radius: 20px;
+    
+    /* Text Colors */
+    --text-primary: #f8fafc;
+    --text-secondary: #cbd5e1;
+    
+    /* Weather State Colors (used dynamically in JS) */
+    --weather-sunny: linear-gradient(135deg, #f59e0b, #fbbf24);
+    --weather-cloudy: linear-gradient(135deg, #64748b, #94a3b8);
+    --weather-rain: linear-gradient(135deg, #1e3a8a, #3b82f6);
+    --weather-snow: linear-gradient(135deg, #e0f2fe, #7dd3fc);
+    --weather-storm: linear-gradient(135deg, #581c87, #7c3aed);
+    --weather-night: linear-gradient(135deg, #020617, #0f172a);
+
+    /* Fonts */
+    --font-primary: 'Inter', sans-serif;
+    --font-heading: 'Outfit', sans-serif;
+}
+
+/* Base Reset */
+*, *::before, *::after {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: var(--font-primary);
+    color: var(--text-primary);
+    background-color: var(--color-bg-midnight);
+    overflow: hidden; /* Important for Dashboard Grid */
+}
+
+/* Light Theme Variables */
+body.theme-light {
+    --text-primary: #0f172a;
+    --text-secondary: #475569;
+    --glass-opacity: 0.4;
+    --glass-bg: rgba(255, 255, 255, var(--glass-opacity));
+    --glass-border: rgba(255, 255, 255, 0.3);
+    --glass-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.15);
+    background-color: #f1f5f9;
+}
+
+/* Hidden Utility */
+.hidden {
+    display: none !important;
+}
+
+/* Glassmorphism Utility */
+.glass-panel {
+    background: var(--glass-bg);
+    backdrop-filter: var(--glass-blur);
+    -webkit-backdrop-filter: var(--glass-blur);
+    border: 1px solid var(--glass-border);
+    border-radius: var(--border-radius);
+    box-shadow: var(--glass-shadow);
+    transition: transform 0.3s ease, box-shadow 0.3s ease, background 0.5s ease, border-radius 0.3s ease;
+    will-change: transform;
+}
+
+body.glow-enabled .glass-panel {
+    box-shadow: 0 0 40px rgba(37, 99, 235, 0.15), var(--glass-shadow);
+}
+
+/* Buttons */
+.icon-btn {
+    background: var(--glass-bg);
+    border: 1px solid var(--glass-border);
+    backdrop-filter: var(--glass-blur);
+    color: var(--text-primary);
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+.icon-btn:hover {
+    background: rgba(255,255,255,0.1);
+    transform: scale(1.05);
+}
+
+.text-btn {
+    background: var(--glass-bg);
+    border: 1px solid var(--glass-border);
+    backdrop-filter: var(--glass-blur);
+    color: var(--text-primary);
+    padding: 0.5rem 1rem;
+    border-radius: var(--btn-radius, 20px);
+    font-family: var(--font-primary);
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+.text-btn:hover {
+    background: rgba(255, 255, 255, 0.1);
+    transform: translateY(-2px);
+}
+
+/* Dynamic Global Background */
+.dynamic-background {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    z-index: 1; /* Below Dashboard */
+    background: var(--weather-night);
+    transition: background 1s ease;
+    opacity: 0.5; /* Keep it subtle behind the glass */
+}
+
+#weather-effects-container {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    z-index: 2; /* Below Dashboard, above bg */
+    pointer-events: none;
+}
+
+/* Error Message */
+.error-msg {
+    margin-bottom: 1rem;
+    padding: 1rem;
+    background: rgba(239, 68, 68, 0.1);
+    border-color: rgba(239, 68, 68, 0.3);
+    color: #fca5a5;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    font-weight: 500;
+    width: 100%;
+}
+
+/* Compact Mode Overrides */
+body.compact-mode {
+    font-size: 0.9rem;
+}
+body.compact-mode .main-content {
+    padding: 1.5rem;
+}
+body.compact-mode .widget {
+    padding: 1.25rem;
+}
+body.compact-mode .nav-item {
+    padding: 0.6rem 1rem;
+    margin-bottom: 0.2rem;
+}
+body.compact-mode .settings-card {
+    padding: 1.5rem;
+}
+body.compact-mode .settings-row {
+    padding: 0.75rem 0;
+}
+
+/* Hide Google Translate UI */
+.goog-te-banner-frame.skiptranslate, 
+.goog-te-gadget-icon,
+.goog-te-gadget-simple,
+#google_translate_element {
+    display: none !important;
+}
+body {
+    top: 0px !important; 
+}

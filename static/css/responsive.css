@@ -1,0 +1,104 @@
+/* Responsive Design for Dashboard Grid */
+
+/* Large Desktop */
+@media (max-width: 1400px) {
+    .page-view {
+        grid-template-columns: repeat(12, 1fr);
+    }
+    
+    .aqi-widget, .insights-widget, .map-widget, .sun-widget {
+        grid-column: span 6;
+    }
+    
+    .hero-widget, .details-widget, .analytics-widget, .daily-widget {
+        grid-column: span 6;
+    }
+}
+
+/* Tablet Landscape / Small Desktop */
+@media (max-width: 1024px) {
+    .sidebar {
+        position: fixed;
+        left: -300px; /* Hide sidebar by default on tablet */
+        transition: left 0.3s ease;
+        background: var(--color-bg-dark); /* Solid background if sliding over */
+    }
+    
+    .sidebar.open {
+        left: 0;
+    }
+
+    .main-content {
+        padding: 1.5rem 2rem;
+    }
+
+    .hero-widget, .analytics-widget, .daily-widget, .details-widget {
+        grid-column: span 12;
+    }
+
+    .aqi-widget, .insights-widget, .map-widget, .sun-widget {
+        grid-column: span 6;
+    }
+}
+
+/* Mobile */
+@media (max-width: 768px) {
+    .main-content {
+        padding: 1rem;
+    }
+
+    .page-view {
+        display: flex; /* Switch from Grid to Flex Column on Mobile */
+        flex-direction: column;
+    }
+    
+    .page-view:not(.active) {
+        display: none !important;
+    }
+
+    .widget {
+        width: 100%;
+    }
+
+    .hero-main-temp .temp {
+        font-size: 4.5rem;
+    }
+
+    .hero-city {
+        font-size: 2rem;
+    }
+    
+    #hero-canvas-container {
+        opacity: 0.5; /* Dim 3D on mobile to keep text readable */
+        width: 100%;
+        right: 0;
+    }
+
+    .details-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+    
+    .search-container {
+        max-width: 100%;
+    }
+}
+
+/* Small Mobile */
+@media (max-width: 480px) {
+    .details-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .hero-main-temp {
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+    
+    .hero-main-temp .temp {
+        font-size: 3.5rem;
+    }
+    
+    .top-nav-actions .text-btn {
+        display: none; /* Hide C/F toggle to save space, maybe put in settings */
+    }
+}

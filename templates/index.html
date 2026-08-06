@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Weather Dashboard 2.0 | Premium Forecast</title>
+    
+    <!-- SEO Meta Tags -->
+    <meta name="description" content="A premium 3D weather forecast dashboard with advanced analytics and AI insights.">
+    
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;600;800&display=swap" rel="stylesheet">
+    
+    <!-- Font Awesome for Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Leaflet Map CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+    
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/settings.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/animations.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/responsive.css') }}">
+</head>
+<body class="theme-dark">
+
+    <!-- Cinematic Loading Screen -->
+    <div id="loader" class="loader-container">
+        <div class="loader-content">
+            <div class="earth-icon-loader"><i class="fa-solid fa-earth-americas"></i></div>
+            <h1 class="loader-title">WEATHER OS</h1>
+            <div class="progress-bar-container">
+                <div class="progress-bar" id="progress-bar"></div>
+            </div>
+            <div class="progress-text" id="progress-text">0%</div>
+        </div>
+    </div>
+
+    <!-- Global Background Elements -->
+    <div class="dynamic-background" id="dynamic-bg"></div>
+    <div id="weather-effects-container"></div> <!-- Rain/Snow particles overlay -->
+
+    <!-- Dashboard Layout Wrapper -->
+    <div class="dashboard-wrapper">
+        
+        <!-- Left Sidebar -->
+        <aside class="sidebar glass-panel">
+            <div class="sidebar-logo">
+                <i class="fa-solid fa-meteor"></i>
+                <span>WeatherOS</span>
+            </div>
+            
+            <nav class="sidebar-nav">
+                <ul class="nav-list">
+                    <!-- Added data-target for SPA routing -->
+                    <li class="nav-item active" data-target="page-dashboard"><i class="fa-solid fa-border-all"></i> Dashboard</li>
+                    <li class="nav-item" data-target="page-map"><i class="fa-solid fa-map-location-dot"></i> Weather Map</li>
+                    <li class="nav-item" data-target="page-forecast"><i class="fa-solid fa-calendar-week"></i> Forecast</li>
+                    <li class="nav-item" data-target="page-analytics"><i class="fa-solid fa-chart-line"></i> Analytics</li>
+                </ul>
+            </nav>
+
+            <div class="sidebar-section">
+                <h4 class="section-heading">Favourite Cities</h4>
+                <ul class="fav-list" id="fav-list">
+                    <!-- Populated by JS -->
+                </ul>
+            </div>
+
+            <div class="sidebar-bottom">
+                <button class="nav-item" id="settings-btn" data-target="page-settings"><i class="fa-solid fa-gear"></i> Settings</button>
+            </div>
+        </aside>
+
+        <!-- Main Content Area -->
+        <main class="main-content">
+            
+            <!-- Top Navigation -->
+            <header class="top-nav">
+                <div class="search-container glass-panel">
+                    <i class="fa-solid fa-magnifying-glass search-icon"></i>
+                    <input type="text" id="city-input" placeholder="Search for cities, places..." autocomplete="off">
+                    <div class="recent-searches dropdown hidden" id="recent-searches">
+                        <!-- Populated by JS -->
+                    </div>
+                </div>
+                
+                <div class="top-nav-actions">
+                    <button class="icon-btn" id="location-btn" aria-label="Use Current Location"><i class="fa-solid fa-location-crosshairs"></i></button>
+                    <button class="icon-btn" id="theme-toggle" aria-label="Toggle Theme"><i class="fa-solid fa-moon"></i></button>
+                    <button class="icon-btn" id="sound-toggle" aria-label="Toggle Sounds"><i class="fa-solid fa-volume-xmark"></i></button>
+                    <button class="text-btn" id="unit-toggle">°C</button>
+                    <div class="profile-avatar" style="overflow: hidden; padding: 0;">
+                        <img src="{{ url_for('static', filename='image/profile.png') }}" alt="Developer" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;" onerror="this.onerror=null; this.src='https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?auto=format&fit=crop&w=150&q=80';">
+                    </div>
+                </div>
+            </header>
+
+            <div class="error-msg glass-panel hidden" id="error-msg">
+                <i class="fa-solid fa-triangle-exclamation"></i>
+                <span id="error-text">Error occurred.</span>
+            </div>
+
+            <!-- Dashboard Grid (Main Container) -->
+            <div class="dashboard-grid">
+                
+                <!-- ========================================== -->
+                <!-- PAGE 1: MAIN DASHBOARD -->
+                <!-- ========================================== -->
+                <div id="page-dashboard" class="page-view active">
+                    <!-- Hero Widget (Current Weather + 3D Scene) -->
+                    <section class="widget hero-widget glass-panel tilt-card" id="hero-widget">
+                        <!-- 3D Canvas will inject here -->
+                        <div id="hero-canvas-container"></div>
+                        
+                        <div class="hero-content">
+                            <div class="hero-header">
+                                <div>
+                                    <h1 class="hero-city" id="city-name">--</h1>
+                                    <p class="hero-country" id="country-name">--</p>
+                                </div>
+                                <div class="hero-time">
+                                    <span id="current-time">--:--</span>
+                                    <span id="date-time">--</span>
+                                </div>
+                            </div>
+                            
+                            <div class="hero-main-temp">
+                                <h2 class="temp" id="current-temp">--°</h2>
+                                <div class="hero-desc-group">
+                                    <div class="weather-icon-large" id="current-icon"><i class="fa-solid fa-cloud"></i></div>
+                                    <p class="description" id="current-desc">--</p>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+
+                    <!-- Current Details Grid -->
+                    <section class="widget details-widget glass-panel">
+                        <h3 class="widget-title">Current Details</h3>
+                        <div class="details-grid">
+                            <div class="detail-card">
+                                <i class="fa-solid fa-droplet"></i>
+                                <div>
+                                    <p class="label">Humidity</p>
+                                    <p class="value" id="humidity">--%</p>
+                                </div>
+                            </div>
+                            <div class="detail-card">
+                                <i class="fa-solid fa-wind"></i>
+                                <div>
+                                    <p class="label">Wind</p>
+                                    <p class="value" id="wind-speed">-- m/s</p>
+                                </div>
+                            </div>
+                            <div class="detail-card">
+                                <i class="fa-solid fa-temperature-half"></i>
+                                <div>
+                                    <p class="label">Feels Like</p>
+                                    <p class="value" id="feels-like">--°</p>
+                                </div>
+                            </div>
+                            <div class="detail-card">
+                                <i class="fa-solid fa-eye"></i>
+                                <div>
+                                    <p class="label">Visibility</p>
+                                    <p class="value" id="visibility">-- km</p>
+                                </div>
+                            </div>
+                            <div class="detail-card">
+                                <i class="fa-solid fa-gauge-high"></i>
+                                <div>
+                                    <p class="label">Pressure</p>
+                                    <p class="value" id="pressure">-- hPa</p>
+                                </div>
+                            </div>
+                            <div class="detail-card">
+                                <i class="fa-solid fa-cloud"></i>
+                                <div>
+                                    <p class="label">Cloud Cover</p>
+                                    <p class="value" id="clouds">--%</p>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+
+                    <!-- Air Quality Widget -->
+                    <section class="widget aqi-widget glass-panel">
+                        <h3 class="widget-title"><i class="fa-solid fa-leaf"></i> Air Quality Index</h3>
+                        <div class="aqi-content">
+                            <div class="aqi-score" id="aqi-score">--</div>
+                            <div class="aqi-status" id="aqi-status">--</div>
+                        </div>
+                        <div class="aqi-details">
+                            <div class="aqi-item"><span>PM2.5</span> <strong id="pm25">--</strong></div>
+                            <div class="aqi-item"><span>PM10</span> <strong id="pm10">--</strong></div>
+                            <div class="aqi-item"><span>O3</span> <strong id="o3">--</strong></div>
+                        </div>
+                    </section>
+
+                    <!-- Sun Path (Sunrise / Sunset) -->
+                    <section class="widget sun-widget glass-panel">
+                        <h3 class="widget-title"><i class="fa-solid fa-sun"></i> Sun & Moon</h3>
+                        <div class="sun-path-container">
+                            <div class="sun-times">
+                                <div class="time-block">
+                                    <i class="fa-solid fa-sunrise"></i>
+                                    <span id="sunrise-time">--:--</span>
+                                </div>
+                                <div class="time-block">
+                                    <i class="fa-solid fa-sunset"></i>
+                                    <span id="sunset-time">--:--</span>
+                                </div>
+                            </div>
+                            <div class="sun-arc">
+                                <div class="sun-orb" id="sun-orb"></div>
+                            </div>
+                        </div>
+                    </section>
+                </div>
+
+                <!-- ========================================== -->
+                <!-- PAGE 2: WEATHER MAP -->
+                <!-- ========================================== -->
+                <div id="page-map" class="page-view">
+                    <section class="widget map-widget glass-panel" id="map-widget-full">
+                        <h3 class="widget-title"><i class="fa-solid fa-map"></i> Global Radar Interactive</h3>
+                        <div class="map-container" id="leaflet-map"></div>
+                    </section>
+                </div>
+
+                <!-- ========================================== -->
+                <!-- PAGE 3: FORECAST -->
+                <!-- ========================================== -->
+                <div id="page-forecast" class="page-view">
+                    <!-- 24-Hour Timeline -->
+                    <section class="widget hourly-widget glass-panel">
+                        <h3 class="widget-title"><i class="fa-regular fa-clock"></i> 24-Hour Forecast</h3>
+                        <div class="hourly-scroll" id="hourly-container">
+                            <!-- Populated by JS -->
+                        </div>
+                    </section>
+
+                    <!-- 5-Day Forecast -->
+                    <section class="widget daily-widget glass-panel">
+                        <h3 class="widget-title"><i class="fa-solid fa-calendar-days"></i> 5-Day Extended Forecast</h3>
+                        <div class="daily-list" id="daily-container">
+                            <!-- Populated by JS -->
+                        </div>
+                    </section>
+                </div>
+
+                <!-- ========================================== -->
+                <!-- PAGE 4: ANALYTICS -->
+                <!-- ========================================== -->
+                <div id="page-analytics" class="page-view">
+                    <!-- Analytics (Charts) Widget -->
+                    <section class="widget analytics-widget glass-panel" id="analytics-widget-full">
+                        <h3 class="widget-title"><i class="fa-solid fa-chart-area"></i> Temperature Trend (24h)</h3>
+                        <div class="chart-container">
+                            <canvas id="tempChart"></canvas>
+                        </div>
+                    </section>
+                    
+                    <!-- Weather Alerts / AI Insights Widget -->
+                    <section class="widget insights-widget glass-panel" id="insights-widget-full">
+                        <h3 class="widget-title"><i class="fa-solid fa-wand-magic-sparkles"></i> AI Insights</h3>
+                        <div class="insights-container" id="insights-container">
+                            <!-- Populated by JS -->
+                        </div>
+                    </section>
+                </div>
+
+                <!-- ========================================== -->
+                <!-- PAGE 5: SETTINGS -->
+                <!-- ========================================== -->
+                {% include 'settings.html' %}
+
+            </div> <!-- End Dashboard Grid -->
+        </main>
+    </div>
+
+    <!-- Scripts -->
+    <!-- GSAP & Plugins -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
+    
+    <!-- Three.js -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    
+    <!-- Lenis Smooth Scroll -->
+    <script src="https://cdn.jsdelivr.net/gh/studio-freight/lenis@1.0.19/bundled/lenis.min.js"></script>
+
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <!-- Leaflet JS (Map) -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+    
+    <!-- Google Translate Widget (Hidden) -->
+    <div id="google_translate_element" style="display:none;"></div>
+    <script type="text/javascript">
+        function googleTranslateElementInit() {
+            new google.translate.TranslateElement({pageLanguage: 'en', autoDisplay: false}, 'google_translate_element');
+        }
+    </script>
+    <script type="text/javascript" src="https://translate.google.com/translate_a/element.js?cb=googleTranslateElementInit"></script>
+
+    <!-- Custom Scripts -->
+    <script src="{{ url_for('static', filename='js/animations.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/threeScene.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/charts.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/settings.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/dashboard.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/weather.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/script.js') }}"></script>
+</body>
+</html>

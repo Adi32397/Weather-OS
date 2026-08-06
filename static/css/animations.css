@@ -1,0 +1,182 @@
+/* Loader Styling & Animations */
+.loader-container {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: var(--color-bg-midnight);
+    z-index: 9999;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    transition: opacity 1s ease, visibility 1s ease;
+}
+
+.loader-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1.5rem;
+}
+
+.earth-icon-loader {
+    font-size: 5rem;
+    color: var(--color-secondary);
+    animation: spin 4s linear infinite;
+    filter: drop-shadow(0 0 20px rgba(56, 189, 248, 0.6));
+}
+
+.loader-title {
+    font-family: var(--font-heading);
+    font-size: 2.5rem;
+    letter-spacing: 4px;
+    background: linear-gradient(to right, #fff, var(--color-secondary));
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    color: transparent;
+    animation: pulse 2s ease-in-out infinite;
+}
+
+.progress-bar-container {
+    width: 250px;
+    height: 6px;
+    background: rgba(255,255,255,0.1);
+    border-radius: 10px;
+    overflow: hidden;
+    position: relative;
+}
+
+.progress-bar {
+    height: 100%;
+    width: 0%;
+    background: linear-gradient(90deg, var(--color-primary), var(--color-secondary));
+    border-radius: 10px;
+    box-shadow: 0 0 10px var(--color-secondary);
+    transition: width 0.1s linear;
+}
+
+.progress-text {
+    font-family: var(--font-primary);
+    color: var(--text-secondary);
+    font-weight: 600;
+}
+
+/* Keyframes */
+@keyframes float {
+    0% { transform: translateY(0); }
+    50% { transform: translateY(-15px); }
+    100% { transform: translateY(0); }
+}
+
+@keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+
+@keyframes pulse {
+    0% { opacity: 0.7; }
+    50% { opacity: 1; }
+    100% { opacity: 0.7; }
+}
+
+
+/* =================================================================
+   WEATHER EFFECTS (CSS Particles)
+================================================================= */
+
+#weather-effects-container {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    z-index: 2; /* Below Dashboard, above global bg */
+    pointer-events: none;
+    overflow: hidden;
+}
+
+/* Rain Effect */
+.rain-particle {
+    position: absolute;
+    background: linear-gradient(to bottom, rgba(255,255,255,0), rgba(255,255,255,0.6));
+    width: 2px;
+    height: 30px;
+    animation: fall linear infinite;
+    bottom: 100%;
+}
+
+/* Snow Effect */
+.snow-particle {
+    position: absolute;
+    background: #fff;
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    filter: blur(1px);
+    animation: snow-fall linear infinite;
+    bottom: 100%;
+}
+
+/* Clouds Effect */
+.cloud-particle {
+    position: absolute;
+    background: url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22white%22%20opacity%3D%220.1%22%3E%3Cpath%20d%3D%22M17.5%2019c2.48%200%204.5-2.02%204.5-4.5S19.98%2010%2017.5%2010c-.3%200-.58.04-.86.09C15.91%207.22%2013.16%205%2010%205c-3.86%200-7%203.14-7%207%200%20.54.07%201.05.19%201.55C1.35%2014.15%200%2015.91%200%2018c0%202.76%202.24%205%205%205h12.5z%22%2F%3E%3C%2Fsvg%3E") no-repeat center center;
+    background-size: contain;
+    animation: drift linear infinite;
+    right: 100%;
+}
+
+/* Sun Rays Effect */
+.sun-ray {
+    position: absolute;
+    top: -10%;
+    left: -10%;
+    width: 120vw;
+    height: 120vh;
+    background: radial-gradient(circle at 20% 20%, rgba(253, 224, 71, 0.15) 0%, transparent 60%);
+    animation: pulse-sun 4s ease-in-out infinite;
+}
+
+/* Lightning Effect */
+.lightning-flash {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: #fff;
+    opacity: 0;
+    animation: flash 8s infinite;
+}
+
+/* Keyframes for Effects */
+@keyframes fall {
+    to { transform: translateY(120vh); }
+}
+
+@keyframes snow-fall {
+    0% { transform: translateY(0) translateX(0); }
+    50% { transform: translateY(60vh) translateX(20px); }
+    100% { transform: translateY(120vh) translateX(-20px); }
+}
+
+@keyframes drift {
+    to { transform: translateX(120vw); }
+}
+
+@keyframes pulse-sun {
+    0% { opacity: 0.6; }
+    50% { opacity: 1; }
+    100% { opacity: 0.6; }
+}
+
+@keyframes flash {
+    0% { opacity: 0; }
+    5% { opacity: 0.8; }
+    10% { opacity: 0; }
+    15% { opacity: 0.4; }
+    20% { opacity: 0; }
+    100% { opacity: 0; }
+}
