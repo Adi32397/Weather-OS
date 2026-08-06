@@ -288,7 +288,7 @@ function initProfileModal() {
                 <img src="/static/image/profile.png" alt="Developer" style="width: 100%; height: 100%; object-fit: cover;" onerror="this.onerror=null; this.src='https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?auto=format&fit=crop&w=250&q=80';">
             </div>
             <h2 style="font-family: var(--font-heading); font-size: 1.5rem; margin-bottom: 0.25rem;">Aditya Singh Saini</h2>
-            <p style="color: var(--color-primary); font-weight: 500; font-size: 0.95rem; margin-bottom: 1rem;">Full Stack Engineer & UI/UX Designer</p>
+            <p style="color: var(--color-primary); font-weight: 500; font-size: 0.95rem; margin-bottom: 1rem;">Cloud Computing Enthusiast & UI/UX Designer</p>
             <p style="color: var(--text-secondary); font-size: 0.9rem; margin-bottom: 1.5rem; line-height: 1.5;">Passionate about building intuitive and visually stunning web applications. Expertise in blending modern aesthetics with robust architecture to craft seamless digital experiences.</p>
             <a href="https://www.linkedin.com/in/aditya-singh-saini-a3654731b" target="_blank" style="display: flex; justify-content: center; align-items: center; gap: 0.5rem; color: #fff; background-color: #0a66c2; padding: 0.6rem 1rem; border-radius: 8px; text-decoration: none; font-weight: 600; width: 100%; margin-bottom: 0.5rem; transition: background-color 0.2s;">
                 <i class="fa-brands fa-linkedin" style="font-size: 1.2rem;"></i> Connect on LinkedIn
