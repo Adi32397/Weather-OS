@@ -10,6 +10,32 @@ document.addEventListener("DOMContentLoaded", () => {
     // 3. Initialize 3D Scene
     if (typeof initThreeScene === 'function') initThreeScene();
 
+    // 3.5 Mobile Menu Toggle
+    const mobileMenuBtn = document.getElementById('mobile-menu-btn');
+    const sidebar = document.querySelector('.sidebar');
+    if (mobileMenuBtn && sidebar) {
+        mobileMenuBtn.addEventListener('click', () => {
+            sidebar.classList.toggle('open');
+        });
+        
+        // Close sidebar when clicking outside on mobile
+        document.addEventListener('click', (e) => {
+            if (window.innerWidth <= 1024 && sidebar.classList.contains('open') && !sidebar.contains(e.target) && !mobileMenuBtn.contains(e.target)) {
+                sidebar.classList.remove('open');
+            }
+        });
+        
+        // Close sidebar when a nav item is clicked on mobile
+        const navItems = sidebar.querySelectorAll('.nav-item');
+        navItems.forEach(item => {
+            item.addEventListener('click', () => {
+                if (window.innerWidth <= 1024) {
+                    sidebar.classList.remove('open');
+                }
+            });
+        });
+    }
+
     // 4. Theme Toggle Setup
     const themeBtn = document.getElementById('theme-toggle');
     if (themeBtn) {

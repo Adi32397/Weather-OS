@@ -99,6 +99,10 @@ body.glow-enabled .glass-panel {
     transform: scale(1.05);
 }
 
+.mobile-menu-btn {
+    display: none;
+}
+
 .text-btn {
     background: var(--glass-bg);
     border: 1px solid var(--glass-border);
