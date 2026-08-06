@@ -99,6 +99,25 @@ def get_air_quality():
         status_code = response.status_code if response is not None else 500
         return jsonify({'error': 'Failed to fetch air quality data.', 'details': str(e)}), status_code
 
+@app.route('/api/reverse-geocode', methods=['GET'])
+def reverse_geocode():
+    """Proxy route for Nominatim reverse geocoding to avoid CORS and browser blocks."""
+    lat = request.args.get('lat')
+    lon = request.args.get('lon')
+    if not lat or not lon:
+        return jsonify({'error': 'Missing lat or lon.'}), 400
+    
+    headers = {
+        'User-Agent': 'WeatherApp-Proxy/1.0 (contact@weatherapp.com)'
+    }
+    try:
+        response = requests.get(f'https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat={lat}&lon={lon}', headers=headers)
+        response.raise_for_status()
+        return jsonify(response.json())
+    except requests.exceptions.RequestException as e:
+        status_code = response.status_code if response is not None else 500
+        return jsonify({'error': 'Failed to fetch location data.', 'details': str(e)}), status_code
+
 @app.route('/api/insights', methods=['POST'])
 def generate_insights():
     """Generate programmatic AI-like insights based on weather data."""

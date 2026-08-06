@@ -137,9 +137,9 @@ async function fetchWeatherByCoords(lat, lon) {
         if (!res.ok) throw new Error('Failed to fetch weather');
         currentWeatherData = await res.json();
 
-        // Fetch exact location name using Nominatim API
+        // Fetch exact location name using backend proxy (Nominatim)
         try {
-            const geoRes = await fetch(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lon}`);
+            const geoRes = await fetch(`/api/reverse-geocode?lat=${lat}&lon=${lon}`);
             if (geoRes.ok) {
                 const geoData = await geoRes.json();
                 if (geoData && geoData.address) {
