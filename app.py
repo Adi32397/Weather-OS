@@ -135,17 +135,19 @@ def generate_insights():
             insights.append({"type": "Thermal Comfort", "icon": "fa-temperature-half", "message": "Optimal thermal comfort. The temperature-humidity index is perfectly balanced for human comfort."})
     
     # 2. Air Quality Impact
-    if aqi:
-        if aqi == 1:
-            insights.append({"type": "Atmospheric Health", "icon": "fa-wind", "message": "Air quality is favorable. Excellent conditions for opening windows and refreshing indoor air."})
-        elif aqi == 2:
-            insights.append({"type": "Atmospheric Health", "icon": "fa-wind", "message": "Air quality is fair to moderate. Generally acceptable for most individuals."})
-        elif aqi == 3:
-            insights.append({"type": "Atmospheric Health", "icon": "fa-smog", "message": "Moderate air quality. Sensitive individuals might experience minor respiratory symptoms."})
-        elif aqi == 4:
-            insights.append({"type": "Atmospheric Health", "icon": "fa-mask-ventilator", "message": "Air quality is poor. Keep windows closed and avoid heavy exertion outdoors."})
+    if aqi is not None:
+        if aqi <= 50:
+            insights.append({"type": "Atmospheric Health", "icon": "fa-wind", "message": "Air quality is Good. Excellent conditions for opening windows and refreshing indoor air."})
+        elif aqi <= 100:
+            insights.append({"type": "Atmospheric Health", "icon": "fa-wind", "message": "Air quality is Moderate. Generally acceptable for most individuals."})
+        elif aqi <= 150:
+            insights.append({"type": "Atmospheric Health", "icon": "fa-smog", "message": "Air quality is Unhealthy for Sensitive Groups. Sensitive individuals might experience minor respiratory symptoms."})
+        elif aqi <= 200:
+            insights.append({"type": "Atmospheric Health", "icon": "fa-mask-ventilator", "message": "Air quality is Unhealthy. Keep windows closed and avoid heavy exertion outdoors."})
+        elif aqi <= 300:
+            insights.append({"type": "Atmospheric Health", "icon": "fa-biohazard", "message": "Air quality is Very Unhealthy. Serious health risks. Everyone should avoid outdoor activities."})
         else:
-            insights.append({"type": "Atmospheric Health", "icon": "fa-biohazard", "message": "Air quality is very poor. Serious health risks. Everyone should avoid outdoor activities."})
+            insights.append({"type": "Atmospheric Health", "icon": "fa-skull-crossbones", "message": "Air quality is Hazardous. Health warning of emergency conditions."})
     
     # 3. Commute & Visibility
     if visibility < 2000 or weather_main in ['fog', 'mist']:
