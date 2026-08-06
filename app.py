@@ -10,6 +10,7 @@ app = Flask(__name__)
 
 # Constants
 OWM_API_KEY = os.getenv('OPENWEATHERMAP_API_KEY')
+WAQI_API_KEY = os.getenv('WAQI_API_KEY', '0490e373f4052b7145e4cbb3d082cd0797f37ccf')
 BASE_URL = 'https://api.openweathermap.org/data/2.5'
 
 def build_params(city, lat, lon):
@@ -83,21 +84,15 @@ def get_air_quality():
     lat = request.args.get('lat')
     lon = request.args.get('lon')
 
-    if not OWM_API_KEY:
-        return jsonify({'error': 'API key not configured on server.'}), 500
+    if not WAQI_API_KEY:
+        return jsonify({'error': 'WAQI API key not configured on server.'}), 500
         
     if not lat or not lon:
         return jsonify({'error': 'Air quality API requires latitude and longitude.'}), 400
-
-    params = {
-        'appid': OWM_API_KEY,
-        'lat': lat,
-        'lon': lon
-    }
     
     try:
-        # OWM Air Pollution API endpoint
-        response = requests.get('http://api.openweathermap.org/data/2.5/air_pollution', params=params)
+        # WAQI Air Quality API endpoint
+        response = requests.get(f'https://api.waqi.info/feed/geo:{lat};{lon}/', params={'token': WAQI_API_KEY})
         response.raise_for_status()
         return jsonify(response.json())
     except requests.exceptions.RequestException as e:

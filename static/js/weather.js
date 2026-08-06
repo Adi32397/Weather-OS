@@ -7,27 +7,6 @@ let currentAqiData = null;
 let currentInsightsData = null;
 let liveClockInterval = null;
 
-function calcEPA_AQI(pm25, pm10) {
-    const calc = (Cp, Ih, Il, BPh, BPl) => Math.round(((Ih - Il) / (BPh - BPl)) * (Cp - BPl) + Il);
-    let aqi25 = 0;
-    if (pm25 >= 0 && pm25 <= 12.0) aqi25 = calc(pm25, 50, 0, 12.0, 0);
-    else if (pm25 <= 35.4) aqi25 = calc(pm25, 100, 51, 35.4, 12.1);
-    else if (pm25 <= 55.4) aqi25 = calc(pm25, 150, 101, 55.4, 35.5);
-    else if (pm25 <= 150.4) aqi25 = calc(pm25, 200, 151, 150.4, 55.5);
-    else if (pm25 <= 250.4) aqi25 = calc(pm25, 300, 201, 250.4, 150.5);
-    else aqi25 = calc(pm25, 500, 301, 500.4, 250.5);
-
-    let aqi10 = 0;
-    if (pm10 >= 0 && pm10 <= 54) aqi10 = calc(pm10, 50, 0, 54, 0);
-    else if (pm10 <= 154) aqi10 = calc(pm10, 100, 51, 154, 55);
-    else if (pm10 <= 254) aqi10 = calc(pm10, 150, 101, 254, 155);
-    else if (pm10 <= 354) aqi10 = calc(pm10, 200, 151, 354, 255);
-    else if (pm10 <= 424) aqi10 = calc(pm10, 300, 201, 424, 355);
-    else aqi10 = calc(pm10, 500, 301, 604, 425);
-
-    return Math.max(aqi25, aqi10);
-}
-
 // Timezone Helper
 function formatCityTime(unixTimestamp, timezoneOffsetSeconds, formatStr) {
     // Shift UTC time by the city's offset
@@ -113,7 +92,7 @@ async function fetchWeather(city) {
                     weather_desc: currentWeatherData.weather[0].description,
                     wind_speed: currentWeatherData.wind.speed,
                     visibility: currentWeatherData.visibility,
-                    aqi: aqiData && aqiData.list.length > 0 ? calcEPA_AQI(aqiData.list[0].components.pm2_5, aqiData.list[0].components.pm10) : null
+                    aqi: aqiData && aqiData.status === 'ok' ? (aqiData.data.aqi === '-' ? null : parseInt(aqiData.data.aqi)) : null
                 })
             });
             if(insightRes.ok) insightsData = await insightRes.json();
@@ -180,7 +159,7 @@ async function fetchWeatherByCoords(lat, lon) {
                     weather_desc: currentWeatherData.weather[0].description,
                     wind_speed: currentWeatherData.wind.speed,
                     visibility: currentWeatherData.visibility,
-                    aqi: aqiData && aqiData.list.length > 0 ? calcEPA_AQI(aqiData.list[0].components.pm2_5, aqiData.list[0].components.pm10) : null
+                    aqi: aqiData && aqiData.status === 'ok' ? (aqiData.data.aqi === '-' ? null : parseInt(aqiData.data.aqi)) : null
                 })
             });
             if(insightRes.ok) insightsData = await insightRes.json();
@@ -246,13 +225,15 @@ function updateUI(aqiData, insightsData) {
     document.getElementById('clouds').textContent = `${clouds.all}%`;
 
     // --- AQI Widget ---
-    if(aqiData && aqiData.list && aqiData.list.length > 0) {
-        const comps = aqiData.list[0].components;
-        const aqi = calcEPA_AQI(comps.pm2_5, comps.pm10);
+    if(aqiData && aqiData.status === 'ok' && aqiData.data.aqi !== '-') {
+        const data = aqiData.data;
+        const aqi = parseInt(data.aqi);
+        const iaqi = data.iaqi || {};
+        
         document.getElementById('aqi-score').textContent = aqi;
-        document.getElementById('pm25').textContent = comps.pm2_5;
-        document.getElementById('pm10').textContent = comps.pm10;
-        document.getElementById('o3').textContent = comps.o3;
+        document.getElementById('pm25').textContent = iaqi.pm25 ? iaqi.pm25.v : '--';
+        document.getElementById('pm10').textContent = iaqi.pm10 ? iaqi.pm10.v : '--';
+        document.getElementById('o3').textContent = iaqi.o3 ? iaqi.o3.v : '--';
         
         let status = 'Good', color = '#10b981'; // 🟢 Green
         if(aqi >= 51 && aqi <= 100) { status = 'Moderate'; color = '#facc15'; } // 🟡 Yellow
