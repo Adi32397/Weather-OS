@@ -115,14 +115,7 @@ def get_air_quality():
         response.raise_for_status()
         data = response.json()
         
-        # Check distance if data is valid
-        if data.get('status') == 'ok' and data.get('data', {}).get('aqi') != '-':
-            station_geo = data['data']['city']['geo']
-            station_lat, station_lon = station_geo[0], station_geo[1]
-            distance = haversine(lat, lon, station_lat, station_lon)
-            if distance > 50: # If station is more than 50km away, ignore it
-                return jsonify({'status': 'error', 'data': 'Nearest station is too far.'})
-                
+        # If we got here, we just return whatever geo-based data WAQI gave us
         return jsonify(data)
     except requests.exceptions.RequestException as e:
         status_code = response.status_code if response is not None else 500
