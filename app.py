@@ -53,27 +53,66 @@ def index():
 
 @app.route('/api/weather', methods=['GET'])
 def get_weather():
-    """Proxy route to fetch current weather data from OpenWeatherMap."""
-    city = request.args.get('city')
+    """Proxy route to fetch current weather data from WeatherAPI (mapped to OWM format)."""
     lat = request.args.get('lat')
     lon = request.args.get('lon')
+    city = request.args.get('city')
 
-    if not OWM_API_KEY:
-        return jsonify({'error': 'API key not configured on server.'}), 500
+    if not WEATHERAPI_KEY:
+        return jsonify({'error': 'WeatherAPI key not configured.'}), 500
 
-    params = build_params(city, lat, lon)
-    if 'q' not in params and 'lat' not in params:
+    query = f"{lat},{lon}" if lat and lon else city
+    if not query:
         return jsonify({'error': 'Please provide city or coordinates.'}), 400
 
     try:
-        response = requests.get(f'{BASE_URL}/weather', params=params)
+        response = requests.get(f'http://api.weatherapi.com/v1/current.json', params={'key': WEATHERAPI_KEY, 'q': query})
         response.raise_for_status()
-        return jsonify(response.json())
+        wapi = response.json()
+        
+        # Calculate timezone offset in seconds
+        import datetime
+        local_dt = datetime.datetime.strptime(wapi['location']['localtime'], '%Y-%m-%d %H:%M')
+        utc_dt = datetime.datetime.utcfromtimestamp(wapi['location']['localtime_epoch'])
+        tz_offset_seconds = int((local_dt - utc_dt).total_seconds())
+        
+        # Map icon
+        is_day = wapi['current']['is_day']
+        code = wapi['current']['condition']['code']
+        icon_code = '01d' if is_day else '01n'
+        if code == 1000: icon_code = '01d' if is_day else '01n'
+        elif code in [1003]: icon_code = '02d' if is_day else '02n'
+        elif code in [1006, 1009]: icon_code = '03d' if is_day else '03n'
+        elif code in [1030, 1135, 1148]: icon_code = '50d' if is_day else '50n'
+        elif code in [1063, 1180, 1183, 1186, 1189, 1192, 1195, 1198, 1201]: icon_code = '10d' if is_day else '10n'
+        elif code in [1066, 1069, 1114, 1117, 1210, 1213, 1216, 1219, 1222, 1225]: icon_code = '13d' if is_day else '13n'
+        elif code in [1087, 1273, 1276, 1279, 1282]: icon_code = '11d' if is_day else '11n'
+        
+        # Mock OWM format
+        owm_format = {
+            "name": wapi['location']['name'],
+            "sys": { "country": wapi['location']['country'] },
+            "timezone": tz_offset_seconds,
+            "dt": wapi['current']['last_updated_epoch'],
+            "main": {
+                "temp": wapi['current']['temp_c'],
+                "feels_like": wapi['current']['feelslike_c'],
+                "humidity": wapi['current']['humidity'],
+                "pressure": wapi['current']['pressure_mb']
+            },
+            "weather": [{
+                "main": wapi['current']['condition']['text'],
+                "description": wapi['current']['condition']['text'],
+                "icon": icon_code
+            }],
+            "wind": { "speed": wapi['current']['wind_kph'] * (1000 / 3600) },
+            "visibility": wapi['current']['vis_km'] * 1000,
+            "clouds": { "all": wapi['current']['cloud'] },
+            "coord": { "lat": wapi['location']['lat'], "lon": wapi['location']['lon'] }
+        }
+        return jsonify(owm_format)
     except requests.exceptions.RequestException as e:
-        status_code = response.status_code if response is not None else 500
-        if status_code == 404:
-             return jsonify({'error': 'City not found.'}), 404
-        return jsonify({'error': 'Failed to fetch weather data.', 'details': str(e)}), status_code
+        return jsonify({'error': 'Failed to fetch weather data.', 'details': str(e)}), 500
 
 @app.route('/api/forecast', methods=['GET'])
 def get_forecast():
