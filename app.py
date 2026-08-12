@@ -10,7 +10,6 @@ app = Flask(__name__)
 
 # Constants
 OWM_API_KEY = os.getenv('OPENWEATHERMAP_API_KEY')
-WAQI_API_KEY = os.getenv('WAQI_API_KEY', '0490e373f4052b7145e4cbb3d082cd0797f37ccf')
 BASE_URL = 'https://api.openweathermap.org/data/2.5'
 
 def build_params(city, lat, lon):
@@ -84,15 +83,15 @@ def get_air_quality():
     lat = request.args.get('lat')
     lon = request.args.get('lon')
 
-    if not WAQI_API_KEY:
-        return jsonify({'error': 'WAQI API key not configured on server.'}), 500
+    if not OWM_API_KEY:
+        return jsonify({'error': 'OWM API key not configured on server.'}), 500
         
     if not lat or not lon:
         return jsonify({'error': 'Air quality API requires latitude and longitude.'}), 400
     
     try:
-        # WAQI Air Quality API endpoint
-        response = requests.get(f'https://api.waqi.info/feed/geo:{lat};{lon}/', params={'token': WAQI_API_KEY})
+        # OpenWeatherMap Air Pollution API endpoint
+        response = requests.get(f'{BASE_URL}/air_pollution', params={'lat': lat, 'lon': lon, 'appid': OWM_API_KEY})
         response.raise_for_status()
         return jsonify(response.json())
     except requests.exceptions.RequestException as e:
@@ -150,18 +149,16 @@ def generate_insights():
     
     # 2. Air Quality Impact
     if aqi is not None:
-        if aqi <= 50:
+        if aqi == 1:
             insights.append({"type": "Atmospheric Health", "icon": "fa-wind", "message": "Air quality is Good. Excellent conditions for opening windows and refreshing indoor air."})
-        elif aqi <= 100:
-            insights.append({"type": "Atmospheric Health", "icon": "fa-wind", "message": "Air quality is Moderate. Generally acceptable for most individuals."})
-        elif aqi <= 150:
-            insights.append({"type": "Atmospheric Health", "icon": "fa-smog", "message": "Air quality is Unhealthy for Sensitive Groups. Sensitive individuals might experience minor respiratory symptoms."})
-        elif aqi <= 200:
-            insights.append({"type": "Atmospheric Health", "icon": "fa-mask-ventilator", "message": "Air quality is Unhealthy. Keep windows closed and avoid heavy exertion outdoors."})
-        elif aqi <= 300:
-            insights.append({"type": "Atmospheric Health", "icon": "fa-biohazard", "message": "Air quality is Very Unhealthy. Serious health risks. Everyone should avoid outdoor activities."})
-        else:
-            insights.append({"type": "Atmospheric Health", "icon": "fa-skull-crossbones", "message": "Air quality is Hazardous. Health warning of emergency conditions."})
+        elif aqi == 2:
+            insights.append({"type": "Atmospheric Health", "icon": "fa-wind", "message": "Air quality is Fair. Generally acceptable for most individuals."})
+        elif aqi == 3:
+            insights.append({"type": "Atmospheric Health", "icon": "fa-smog", "message": "Air quality is Moderate. Sensitive individuals might experience minor respiratory symptoms."})
+        elif aqi == 4:
+            insights.append({"type": "Atmospheric Health", "icon": "fa-mask-ventilator", "message": "Air quality is Poor. Keep windows closed and avoid heavy exertion outdoors."})
+        elif aqi == 5:
+            insights.append({"type": "Atmospheric Health", "icon": "fa-biohazard", "message": "Air quality is Very Poor. Serious health risks. Everyone should avoid outdoor activities."})
     
     # 3. Commute & Visibility
     if visibility < 2000 or weather_main in ['fog', 'mist']:
