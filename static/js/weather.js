@@ -74,7 +74,7 @@ async function fetchWeather(city) {
         const lon = currentWeatherData.coord.lon;
         let aqiData = null;
         try {
-            const aqiRes = await fetch(`/api/air-quality?lat=${lat}&lon=${lon}`);
+            const aqiRes = await fetch(`/api/air-quality?city=${encodeURIComponent(currentWeatherData.name)}&lat=${lat}&lon=${lon}`);
             if(aqiRes.ok) aqiData = await aqiRes.json();
         } catch(e) { console.warn("AQI fetch failed", e); }
         
@@ -130,7 +130,7 @@ async function fetchWeatherByCoords(lat, lon) {
         // 1, 2 & 3. Weather, Forecast, and Air Quality in parallel
         const weatherPromise = fetch(`/api/weather?lat=${lat}&lon=${lon}`);
         const forecastPromise = fetch(`/api/forecast?lat=${lat}&lon=${lon}`);
-        const aqiPromise = fetch(`/api/air-quality?lat=${lat}&lon=${lon}`);
+        const aqiPromise = fetch(`/api/air-quality?city=${encodeURIComponent(currentWeatherData ? currentWeatherData.name : '')}&lat=${lat}&lon=${lon}`);
 
         const [res, forecastRes, aqiRes] = await Promise.all([weatherPromise, forecastPromise, aqiPromise]);
 
@@ -239,7 +239,7 @@ function updateUI(aqiData, insightsData) {
     document.getElementById('clouds').textContent = `${clouds.all}%`;
 
     // --- AQI Widget ---
-    if(aqiData && aqiData.status === 'ok' && aqiData.data.aqi !== '-') {
+    if(aqiData && aqiData.status === 'ok' && aqiData.data && aqiData.data.aqi && aqiData.data.aqi !== '-') {
         const data = aqiData.data;
         const aqi = parseInt(data.aqi);
         const iaqi = data.iaqi || {};
@@ -260,6 +260,16 @@ function updateUI(aqiData, insightsData) {
         aqiStatusEl.textContent = status;
         aqiStatusEl.style.color = color;
         document.getElementById('aqi-score').style.color = color;
+    } else {
+        document.getElementById('aqi-score').textContent = '--';
+        document.getElementById('pm25').textContent = '--';
+        document.getElementById('pm10').textContent = '--';
+        document.getElementById('o3').textContent = '--';
+        
+        const aqiStatusEl = document.getElementById('aqi-status');
+        aqiStatusEl.textContent = 'Data Unavailable';
+        aqiStatusEl.style.color = '#9ca3af';
+        document.getElementById('aqi-score').style.color = '#9ca3af';
     }
 
     // --- AI Insights Widget ---

@@ -2,6 +2,7 @@ from flask import Flask, render_template, request, jsonify
 import requests
 import os
 from dotenv import load_dotenv
+from math import radians, cos, sin, asin, sqrt
 
 # Load environment variables
 load_dotenv()
@@ -12,6 +13,15 @@ app = Flask(__name__)
 OWM_API_KEY = os.getenv('OPENWEATHERMAP_API_KEY')
 WAQI_API_KEY = os.getenv('WAQI_API_KEY', '0490e373f4052b7145e4cbb3d082cd0797f37ccf')
 BASE_URL = 'https://api.openweathermap.org/data/2.5'
+def haversine(lat1, lon1, lat2, lon2):
+    """Calculate the great circle distance in kilometers between two points on the earth."""
+    lon1, lat1, lon2, lat2 = map(radians, [float(lon1), float(lat1), float(lon2), float(lat2)])
+    dlon = lon2 - lon1 
+    dlat = lat2 - lat1 
+    a = sin(dlat/2)**2 + cos(lat1) * cos(lat2) * sin(dlon/2)**2
+    c = 2 * asin(sqrt(a)) 
+    r = 6371 # Radius of earth in kilometers
+    return c * r
 
 def build_params(city, lat, lon):
     params = {
@@ -83,6 +93,7 @@ def get_air_quality():
     """Proxy route to fetch Air Quality data."""
     lat = request.args.get('lat')
     lon = request.args.get('lon')
+    city = request.args.get('city')
 
     if not WAQI_API_KEY:
         return jsonify({'error': 'WAQI API key not configured on server.'}), 500
@@ -91,10 +102,28 @@ def get_air_quality():
         return jsonify({'error': 'Air quality API requires latitude and longitude.'}), 400
     
     try:
+        if city:
+            # Try by city first
+            response = requests.get(f'https://api.waqi.info/feed/{city}/', params={'token': WAQI_API_KEY})
+            if response.status_code == 200:
+                data = response.json()
+                if data.get('status') == 'ok' and data.get('data', {}).get('aqi') != '-':
+                    return jsonify(data)
+                    
         # WAQI Air Quality API endpoint
         response = requests.get(f'https://api.waqi.info/feed/geo:{lat};{lon}/', params={'token': WAQI_API_KEY})
         response.raise_for_status()
-        return jsonify(response.json())
+        data = response.json()
+        
+        # Check distance if data is valid
+        if data.get('status') == 'ok' and data.get('data', {}).get('aqi') != '-':
+            station_geo = data['data']['city']['geo']
+            station_lat, station_lon = station_geo[0], station_geo[1]
+            distance = haversine(lat, lon, station_lat, station_lon)
+            if distance > 50: # If station is more than 50km away, ignore it
+                return jsonify({'status': 'error', 'data': 'Nearest station is too far.'})
+                
+        return jsonify(data)
     except requests.exceptions.RequestException as e:
         status_code = response.status_code if response is not None else 500
         return jsonify({'error': 'Failed to fetch air quality data.', 'details': str(e)}), status_code
