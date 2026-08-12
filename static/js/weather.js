@@ -92,7 +92,7 @@ async function fetchWeather(city) {
                     weather_desc: currentWeatherData.weather[0].description,
                     wind_speed: currentWeatherData.wind.speed,
                     visibility: currentWeatherData.visibility,
-                    aqi: aqiData && aqiData.list && aqiData.list.length > 0 ? aqiData.list[0].main.aqi : null
+                    aqi: aqiData && aqiData.status === 'ok' ? (aqiData.data.aqi === '-' ? null : parseInt(aqiData.data.aqi)) : null
                 })
             });
             if(insightRes.ok) insightsData = await insightRes.json();
@@ -173,7 +173,7 @@ async function fetchWeatherByCoords(lat, lon) {
                     weather_desc: currentWeatherData.weather[0].description,
                     wind_speed: currentWeatherData.wind.speed,
                     visibility: currentWeatherData.visibility,
-                    aqi: aqiData && aqiData.list && aqiData.list.length > 0 ? aqiData.list[0].main.aqi : null
+                    aqi: aqiData && aqiData.status === 'ok' ? (aqiData.data.aqi === '-' ? null : parseInt(aqiData.data.aqi)) : null
                 })
             });
             if(insightRes.ok) insightsData = await insightRes.json();
@@ -239,21 +239,22 @@ function updateUI(aqiData, insightsData) {
     document.getElementById('clouds').textContent = `${clouds.all}%`;
 
     // --- AQI Widget ---
-    if(aqiData && aqiData.list && aqiData.list.length > 0) {
-        const data = aqiData.list[0];
-        const aqi = data.main.aqi;
-        const components = data.components || {};
+    if(aqiData && aqiData.status === 'ok' && aqiData.data.aqi !== '-') {
+        const data = aqiData.data;
+        const aqi = parseInt(data.aqi);
+        const iaqi = data.iaqi || {};
         
         document.getElementById('aqi-score').textContent = aqi;
-        document.getElementById('pm25').textContent = components.pm2_5 !== undefined ? components.pm2_5.toFixed(1) : '--';
-        document.getElementById('pm10').textContent = components.pm10 !== undefined ? components.pm10.toFixed(1) : '--';
-        document.getElementById('o3').textContent = components.o3 !== undefined ? components.o3.toFixed(1) : '--';
+        document.getElementById('pm25').textContent = iaqi.pm25 ? iaqi.pm25.v : '--';
+        document.getElementById('pm10').textContent = iaqi.pm10 ? iaqi.pm10.v : '--';
+        document.getElementById('o3').textContent = iaqi.o3 ? iaqi.o3.v : '--';
         
         let status = 'Good', color = '#10b981'; // 🟢 Green
-        if(aqi === 2) { status = 'Fair'; color = '#facc15'; } // 🟡 Yellow
-        if(aqi === 3) { status = 'Moderate'; color = '#fb923c'; } // 🟠 Orange
-        if(aqi === 4) { status = 'Poor'; color = '#ef4444'; } // 🔴 Red
-        if(aqi === 5) { status = 'Very Poor'; color = '#a855f7'; } // 🟣 Purple
+        if(aqi >= 51 && aqi <= 100) { status = 'Moderate'; color = '#facc15'; } // 🟡 Yellow
+        if(aqi >= 101 && aqi <= 150) { status = 'Unhealthy for Sensitive Groups'; color = '#fb923c'; } // 🟠 Orange
+        if(aqi >= 151 && aqi <= 200) { status = 'Unhealthy'; color = '#ef4444'; } // 🔴 Red
+        if(aqi >= 201 && aqi <= 300) { status = 'Very Unhealthy'; color = '#a855f7'; } // 🟣 Purple
+        if(aqi >= 301) { status = 'Hazardous'; color = '#000000'; } // ⚫ Black
         
         const aqiStatusEl = document.getElementById('aqi-status');
         aqiStatusEl.textContent = status;
