@@ -11,7 +11,7 @@ app = Flask(__name__)
 
 # Constants
 OWM_API_KEY = os.getenv('OPENWEATHERMAP_API_KEY')
-WAQI_API_KEY = os.getenv('WAQI_API_KEY', '0490e373f4052b7145e4cbb3d082cd0797f37ccf')
+WEATHERAPI_KEY = os.getenv('WEATHERAPI_KEY', '5c3ee4f89e2b4b788b2190843261208')
 BASE_URL = 'https://api.openweathermap.org/data/2.5'
 def haversine(lat1, lon1, lat2, lon2):
     """Calculate the great circle distance in kilometers between two points on the earth."""
@@ -101,66 +101,44 @@ def get_forecast():
 
 @app.route('/api/air-quality', methods=['GET'])
 def get_air_quality():
-    """Proxy route to fetch Air Quality data."""
+    """Proxy route to fetch Air Quality data using WeatherAPI."""
     lat = request.args.get('lat')
     lon = request.args.get('lon')
-    city = request.args.get('city')
 
-    if not WAQI_API_KEY:
-        return jsonify({'error': 'WAQI API key not configured on server.'}), 500
+    if not WEATHERAPI_KEY:
+        return jsonify({'error': 'WeatherAPI key not configured on server.'}), 500
         
     if not lat or not lon:
         return jsonify({'error': 'Air quality API requires latitude and longitude.'}), 400
     
     try:
-        if city:
-            # Try by city first
-            response = requests.get(f'https://api.waqi.info/feed/{city}/', params={'token': WAQI_API_KEY})
-            if response.status_code == 200:
-                data = response.json()
-                if data.get('status') == 'ok' and data.get('data', {}).get('aqi') != '-':
-                    return jsonify(data)
-                    
-        # WAQI Air Quality API endpoint
-        response = requests.get(f'https://api.waqi.info/feed/geo:{lat};{lon}/', params={'token': WAQI_API_KEY})
+        # WeatherAPI requires a query, we'll use coordinates to be most precise
+        query = f"{lat},{lon}"
+        response = requests.get(f'http://api.weatherapi.com/v1/current.json', params={'key': WEATHERAPI_KEY, 'q': query, 'aqi': 'yes'})
         response.raise_for_status()
-        data = response.json()
+        weatherapi_data = response.json()
         
-        # Determine if we should fallback to OpenWeatherMap Air Pollution API 
-        # because the nearest WAQI station is too far away or missing.
-        use_owm_fallback = False
-        if data.get('status') == 'ok' and data.get('data', {}).get('aqi') != '-':
-            station_geo = data['data']['city']['geo']
-            station_lat, station_lon = station_geo[0], station_geo[1]
-            distance = haversine(lat, lon, station_lat, station_lon)
-            if distance > 50: 
-                use_owm_fallback = True
-        else:
-            use_owm_fallback = True
-            
-        if use_owm_fallback and OWM_API_KEY:
-            owm_resp = requests.get(f'{BASE_URL}/air_pollution', params={'lat': lat, 'lon': lon, 'appid': OWM_API_KEY})
-            if owm_resp.status_code == 200:
-                owm_data = owm_resp.json()
-                components = owm_data['list'][0]['components']
-                pm25 = components.get('pm2_5', 0)
-                pm10 = components.get('pm10', 0)
-                o3 = components.get('o3', 0)
-                
-                calculated_aqi = calc_pm25_aqi(pm25)
-                return jsonify({
-                    "status": "ok",
-                    "data": {
-                        "aqi": calculated_aqi,
-                        "iaqi": {
-                            "pm25": {"v": round(pm25, 1)},
-                            "pm10": {"v": round(pm10, 1)},
-                            "o3": {"v": round(o3, 1)}
-                        }
-                    }
-                })
-
-        return jsonify(data)
+        # WeatherAPI provides PM2.5, PM10, etc. under current.air_quality
+        aqi_data = weatherapi_data.get('current', {}).get('air_quality', {})
+        pm25 = aqi_data.get('pm2_5', 0)
+        pm10 = aqi_data.get('pm10', 0)
+        o3 = aqi_data.get('o3', 0)
+        
+        # Calculate the US EPA AQI using PM2.5
+        calculated_aqi = calc_pm25_aqi(pm25)
+        
+        # Return in the format expected by the frontend
+        return jsonify({
+            "status": "ok",
+            "data": {
+                "aqi": calculated_aqi,
+                "iaqi": {
+                    "pm25": {"v": round(pm25, 1)},
+                    "pm10": {"v": round(pm10, 1)},
+                    "o3": {"v": round(o3, 1)}
+                }
+            }
+        })
     except requests.exceptions.RequestException as e:
         status_code = response.status_code if response is not None else 500
         return jsonify({'error': 'Failed to fetch air quality data.', 'details': str(e)}), status_code
