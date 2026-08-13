@@ -11,7 +11,6 @@ app = Flask(__name__)
 
 # Constants
 OWM_API_KEY = os.getenv('OPENWEATHERMAP_API_KEY')
-WEATHERAPI_KEY = os.getenv('WEATHERAPI_KEY', '5c3ee4f89e2b4b788b2190843261208')
 BASE_URL = 'https://api.openweathermap.org/data/2.5'
 def haversine(lat1, lon1, lat2, lon2):
     """Calculate the great circle distance in kilometers between two points on the earth."""
@@ -23,16 +22,7 @@ def haversine(lat1, lon1, lat2, lon2):
     r = 6371 # Radius of earth in kilometers
     return c * r
 
-def calc_pm25_aqi(pm25):
-    """Calculate the US EPA AQI for PM2.5 concentration."""
-    if pm25 <= 12.0: return int(round((50 - 0) / (12.0 - 0.0) * (pm25 - 0.0) + 0))
-    elif pm25 <= 35.4: return int(round((100 - 51) / (35.4 - 12.1) * (pm25 - 12.1) + 51))
-    elif pm25 <= 55.4: return int(round((150 - 101) / (55.4 - 35.5) * (pm25 - 35.5) + 101))
-    elif pm25 <= 150.4: return int(round((200 - 151) / (150.4 - 55.5) * (pm25 - 55.5) + 151))
-    elif pm25 <= 250.4: return int(round((300 - 201) / (250.4 - 150.5) * (pm25 - 150.5) + 201))
-    elif pm25 <= 350.4: return int(round((400 - 301) / (350.4 - 250.5) * (pm25 - 250.5) + 301))
-    elif pm25 <= 500.4: return int(round((500 - 401) / (500.4 - 350.5) * (pm25 - 350.5) + 401))
-    else: return 500
+
 
 def build_params(city, lat, lon):
     params = {
@@ -99,49 +89,7 @@ def get_forecast():
              return jsonify({'error': 'City not found.'}), 404
         return jsonify({'error': 'Failed to fetch forecast data.', 'details': str(e)}), status_code
 
-@app.route('/api/air-quality', methods=['GET'])
-def get_air_quality():
-    """Proxy route to fetch Air Quality data using WeatherAPI."""
-    lat = request.args.get('lat')
-    lon = request.args.get('lon')
 
-    if not WEATHERAPI_KEY:
-        return jsonify({'error': 'WeatherAPI key not configured on server.'}), 500
-        
-    if not lat or not lon:
-        return jsonify({'error': 'Air quality API requires latitude and longitude.'}), 400
-    
-    try:
-        # WeatherAPI requires a query, we'll use coordinates to be most precise
-        query = f"{lat},{lon}"
-        response = requests.get(f'http://api.weatherapi.com/v1/current.json', params={'key': WEATHERAPI_KEY, 'q': query, 'aqi': 'yes'})
-        response.raise_for_status()
-        weatherapi_data = response.json()
-        
-        # WeatherAPI provides PM2.5, PM10, etc. under current.air_quality
-        aqi_data = weatherapi_data.get('current', {}).get('air_quality', {})
-        pm25 = aqi_data.get('pm2_5', 0)
-        pm10 = aqi_data.get('pm10', 0)
-        o3 = aqi_data.get('o3', 0)
-        
-        # Calculate the US EPA AQI using PM2.5
-        calculated_aqi = calc_pm25_aqi(pm25)
-        
-        # Return in the format expected by the frontend
-        return jsonify({
-            "status": "ok",
-            "data": {
-                "aqi": calculated_aqi,
-                "iaqi": {
-                    "pm25": {"v": round(pm25, 1)},
-                    "pm10": {"v": round(pm10, 1)},
-                    "o3": {"v": round(o3, 1)}
-                }
-            }
-        })
-    except requests.exceptions.RequestException as e:
-        status_code = response.status_code if response is not None else 500
-        return jsonify({'error': 'Failed to fetch air quality data.', 'details': str(e)}), status_code
 
 @app.route('/api/reverse-geocode', methods=['GET'])
 def reverse_geocode():

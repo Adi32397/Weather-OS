@@ -3,7 +3,6 @@
 let isCelsius = true;
 let currentWeatherData = null;
 let currentForecastData = null;
-let currentAqiData = null;
 let currentInsightsData = null;
 let liveClockInterval = null;
 
@@ -69,14 +68,8 @@ async function fetchWeather(city) {
         if (!forecastRes.ok) throw new Error('Failed to fetch forecast');
         currentForecastData = await forecastRes.json();
         
-        // 3. Air Quality
         const lat = currentWeatherData.coord.lat;
         const lon = currentWeatherData.coord.lon;
-        let aqiData = null;
-        try {
-            const aqiRes = await fetch(`/api/air-quality?city=${encodeURIComponent(currentWeatherData.name)}&lat=${lat}&lon=${lon}`);
-            if(aqiRes.ok) aqiData = await aqiRes.json();
-        } catch(e) { console.warn("AQI fetch failed", e); }
         
         // 4. AI Insights
         let insightsData = null;
@@ -91,17 +84,15 @@ async function fetchWeather(city) {
                     weather_main: currentWeatherData.weather[0].main,
                     weather_desc: currentWeatherData.weather[0].description,
                     wind_speed: currentWeatherData.wind.speed,
-                    visibility: currentWeatherData.visibility,
-                    aqi: aqiData && aqiData.status === 'ok' ? (aqiData.data.aqi === '-' ? null : parseInt(aqiData.data.aqi)) : null
+                    visibility: currentWeatherData.visibility
                 })
             });
             if(insightRes.ok) insightsData = await insightRes.json();
         } catch(e) { console.warn("Insights fetch failed", e); }
 
         // Update DOM
-        currentAqiData = aqiData;
         currentInsightsData = insightsData;
-        updateUI(aqiData, insightsData);
+        updateUI(insightsData);
         
         // Update Map
         if(window.updateMapLocation) {
@@ -127,12 +118,11 @@ async function fetchWeatherByCoords(lat, lon) {
         hideError();
         showLoader();
         
-        // 1, 2 & 3. Weather, Forecast, and Air Quality in parallel
+        // 1 & 2. Weather and Forecast in parallel
         const weatherPromise = fetch(`/api/weather?lat=${lat}&lon=${lon}`);
         const forecastPromise = fetch(`/api/forecast?lat=${lat}&lon=${lon}`);
-        const aqiPromise = fetch(`/api/air-quality?city=${encodeURIComponent(currentWeatherData ? currentWeatherData.name : '')}&lat=${lat}&lon=${lon}`);
 
-        const [res, forecastRes, aqiRes] = await Promise.all([weatherPromise, forecastPromise, aqiPromise]);
+        const [res, forecastRes] = await Promise.all([weatherPromise, forecastPromise]);
 
         if (!res.ok) {
             const errData = await res.json();
@@ -157,10 +147,7 @@ async function fetchWeatherByCoords(lat, lon) {
         if (!forecastRes.ok) throw new Error('Failed to fetch forecast');
         currentForecastData = await forecastRes.json();
         
-        let aqiData = null;
-        try {
-            if(aqiRes.ok) aqiData = await aqiRes.json();
-        } catch(e) {}
+
         
         // 4. AI Insights
         let insightsData = null;
@@ -175,16 +162,14 @@ async function fetchWeatherByCoords(lat, lon) {
                     weather_main: currentWeatherData.weather[0].main,
                     weather_desc: currentWeatherData.weather[0].description,
                     wind_speed: currentWeatherData.wind.speed,
-                    visibility: currentWeatherData.visibility,
-                    aqi: aqiData && aqiData.status === 'ok' ? (aqiData.data.aqi === '-' ? null : parseInt(aqiData.data.aqi)) : null
+                    visibility: currentWeatherData.visibility
                 })
             });
             if(insightRes.ok) insightsData = await insightRes.json();
         } catch(e) {}
 
-        currentAqiData = aqiData;
         currentInsightsData = insightsData;
-        updateUI(aqiData, insightsData);
+        updateUI(insightsData);
         
         if(window.updateMapLocation) window.updateMapLocation(lat, lon);
         if(window.addRecentSearch) window.addRecentSearch(currentWeatherData.name);
@@ -197,7 +182,7 @@ async function fetchWeatherByCoords(lat, lon) {
     }
 }
 
-function updateUI(aqiData, insightsData) {
+function updateUI(insightsData) {
     if (!currentWeatherData || !currentForecastData) return;
 
     // --- Hero Widget ---
@@ -241,39 +226,7 @@ function updateUI(aqiData, insightsData) {
     document.getElementById('pressure').textContent = `${main.pressure} hPa`;
     document.getElementById('clouds').textContent = `${clouds.all}%`;
 
-    // --- AQI Widget ---
-    if(aqiData && aqiData.status === 'ok' && aqiData.data && aqiData.data.aqi && aqiData.data.aqi !== '-') {
-        const data = aqiData.data;
-        const aqi = parseInt(data.aqi);
-        const iaqi = data.iaqi || {};
-        
-        document.getElementById('aqi-score').textContent = aqi;
-        document.getElementById('pm25').textContent = iaqi.pm25 ? iaqi.pm25.v : '--';
-        document.getElementById('pm10').textContent = iaqi.pm10 ? iaqi.pm10.v : '--';
-        document.getElementById('o3').textContent = iaqi.o3 ? iaqi.o3.v : '--';
-        
-        let status = 'Good', color = '#10b981'; // 🟢 Green
-        if(aqi >= 51 && aqi <= 100) { status = 'Moderate'; color = '#facc15'; } // 🟡 Yellow
-        if(aqi >= 101 && aqi <= 150) { status = 'Unhealthy for Sensitive Groups'; color = '#fb923c'; } // 🟠 Orange
-        if(aqi >= 151 && aqi <= 200) { status = 'Unhealthy'; color = '#ef4444'; } // 🔴 Red
-        if(aqi >= 201 && aqi <= 300) { status = 'Very Unhealthy'; color = '#a855f7'; } // 🟣 Purple
-        if(aqi >= 301) { status = 'Hazardous'; color = '#000000'; } // ⚫ Black
-        
-        const aqiStatusEl = document.getElementById('aqi-status');
-        aqiStatusEl.textContent = status;
-        aqiStatusEl.style.color = color;
-        document.getElementById('aqi-score').style.color = color;
-    } else {
-        document.getElementById('aqi-score').textContent = '--';
-        document.getElementById('pm25').textContent = '--';
-        document.getElementById('pm10').textContent = '--';
-        document.getElementById('o3').textContent = '--';
-        
-        const aqiStatusEl = document.getElementById('aqi-status');
-        aqiStatusEl.textContent = 'Data Unavailable';
-        aqiStatusEl.style.color = '#9ca3af';
-        document.getElementById('aqi-score').style.color = '#9ca3af';
-    }
+
 
     // --- AI Insights Widget ---
     const insightsContainer = document.getElementById('insights-container');
@@ -483,7 +436,7 @@ function toggleUnit() {
     const btn = document.getElementById('unit-toggle');
     btn.textContent = isCelsius ? '°C' : '°F';
     if(currentWeatherData) {
-        updateUI(currentAqiData, currentInsightsData); 
+        updateUI(currentInsightsData); 
     }
 }
 
