@@ -11,7 +11,7 @@ app = Flask(__name__)
 
 # Constants
 OWM_API_KEY = os.getenv('OPENWEATHERMAP_API_KEY')
-WEATHERAPI_KEY = os.getenv('WEATHERAPI_KEY', '5c3ee4f89e2b4b788b2190843261208')
+WAQI_API_KEY = os.getenv('WAQI_API_KEY')
 BASE_URL = 'https://api.openweathermap.org/data/2.5'
 def haversine(lat1, lon1, lat2, lon2):
     """Calculate the great circle distance in kilometers between two points on the earth."""
@@ -101,28 +101,28 @@ def get_forecast():
 
 @app.route('/api/air-quality', methods=['GET'])
 def get_air_quality():
-    """Proxy route to fetch Air Quality data using WeatherAPI."""
+    """Proxy route to fetch Air Quality data using OpenWeatherMap."""
     lat = request.args.get('lat')
     lon = request.args.get('lon')
 
-    if not WEATHERAPI_KEY:
-        return jsonify({'error': 'WeatherAPI key not configured on server.'}), 500
+    if not OWM_API_KEY:
+        return jsonify({'error': 'OWM API key not configured on server.'}), 500
         
     if not lat or not lon:
         return jsonify({'error': 'Air quality API requires latitude and longitude.'}), 400
     
     try:
-        # WeatherAPI requires a query, we'll use coordinates to be most precise
-        query = f"{lat},{lon}"
-        response = requests.get(f'http://api.weatherapi.com/v1/current.json', params={'key': WEATHERAPI_KEY, 'q': query, 'aqi': 'yes'})
+        response = requests.get(f'http://api.openweathermap.org/data/2.5/air_pollution', params={'lat': lat, 'lon': lon, 'appid': OWM_API_KEY})
         response.raise_for_status()
-        weatherapi_data = response.json()
+        owm_data = response.json()
         
-        # WeatherAPI provides PM2.5, PM10, etc. under current.air_quality
-        aqi_data = weatherapi_data.get('current', {}).get('air_quality', {})
-        pm25 = aqi_data.get('pm2_5', 0)
-        pm10 = aqi_data.get('pm10', 0)
-        o3 = aqi_data.get('o3', 0)
+        if not owm_data.get('list'):
+            return jsonify({'error': 'Failed to fetch air quality data from OWM.'}), 500
+            
+        components = owm_data['list'][0].get('components', {})
+        pm25 = components.get('pm2_5', 0)
+        pm10 = components.get('pm10', 0)
+        o3 = components.get('o3', 0)
         
         # Calculate the US EPA AQI using PM2.5
         calculated_aqi = calc_pm25_aqi(pm25)
