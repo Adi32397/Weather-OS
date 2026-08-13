@@ -134,7 +134,10 @@ async function fetchWeatherByCoords(lat, lon) {
 
         const [res, forecastRes, aqiRes] = await Promise.all([weatherPromise, forecastPromise, aqiPromise]);
 
-        if (!res.ok) throw new Error('Failed to fetch weather');
+        if (!res.ok) {
+            const errData = await res.json();
+            throw new Error(errData.error || 'Failed to fetch weather');
+        }
         currentWeatherData = await res.json();
 
         // Fetch exact location name using backend proxy (Nominatim)
